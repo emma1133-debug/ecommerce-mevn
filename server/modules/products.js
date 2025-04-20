@@ -5,7 +5,7 @@ module.exports = {
 	init: function (app) {
 		const router = express.Router();
 
-		// ✅ ADD NEW PRODUCT WITH CATEGORY
+		// ✅ ADD NEW PRODUCT
 		router.post("/add", async function (req, res) {
 			const { name, description, price, itemsInStock, category } = req.fields;
 			const images = [];
@@ -35,6 +35,40 @@ module.exports = {
 			});
 		});
 
+		// ✅ UPDATE PRODUCT
+		router.post("/update", async function (req, res) {
+			const { _id, name, description, price, itemsInStock, category } = req.fields;
+			const updateData = {
+				name,
+				description,
+				price: parseFloat(price),
+				itemsInStock: parseInt(itemsInStock),
+				category: category || "Uncategorized"
+			};
+
+			const images = [];
+
+			if (req.files && req.files.images) {
+				let uploaded = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
+				for (let img of uploaded) {
+					const filename = new Date().getTime() + "_" + img.name;
+					await global.moveFile(img, filename);
+					images.push(filename);
+				}
+				updateData.images = images;
+			}
+
+			await global.db.collection("products").updateOne(
+				{ _id: ObjectId(_id) },
+				{ $set: updateData }
+			);
+
+			res.json({
+				status: "success",
+				message: "Product has been updated successfully."
+			});
+		});
+
 		// ✅ FETCH SINGLE PRODUCT
 		router.post("/fetchSingle", async function (req, res) {
 			const _id = req.fields._id;
@@ -58,7 +92,7 @@ module.exports = {
 			});
 		});
 
-		// ✅ FETCH PRODUCTS WITH PAGINATION + SEARCH + SORT + CATEGORY + totalPages
+		// ✅ FETCH PRODUCTS WITH PAGINATION + SEARCH + SORT + CATEGORY
 		router.post("/fetch", async function (req, res) {
 			const page = parseInt(req.fields.page) || 1;
 			const sortBy = req.fields.sortBy;

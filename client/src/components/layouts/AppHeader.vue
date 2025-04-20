@@ -1,41 +1,78 @@
 <template>
   <nav class="header-nav z-depth-1">
     <div class="nav-wrapper container">
-      <router-link id="logo-container" to="/" class="brand-logo">Emma Channe </router-link>
-      <a href="#" data-target="nav-mobile" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+      <!-- 🌸 Logo -->
+      <router-link id="logo-container" to="/" class="brand-logo">Emma Channe</router-link>
 
+      <!-- 📱 Mobile menu icon -->
+      <a href="#" data-target="nav-mobile" class="sidenav-trigger">
+        <i class="material-icons">menu</i>
+      </a>
+
+      <!-- 🌸 Desktop nav -->
       <ul class="right hide-on-med-and-down">
-        <li>
+        <!-- 🔍 Search (notranslate) -->
+        <li class="notranslate">
           <form @submit.prevent="doSearch" class="header-search">
-            <div class="input-wrapper">
-              <i class="material-icons search-icon">search</i>
-              <input type="search" v-model="search" placeholder="Search..." class="search-input" />
-              <i class="material-icons close-icon" v-if="search" @click="search = ''">close</i>
+            <div class="input-wrapper notranslate">
+              <i class="material-icons search-icon notranslate">search</i>
+              <input
+                type="search"
+                v-model="search"
+                placeholder="Search..."
+                class="search-input notranslate"
+              />
+              <i class="material-icons close-icon notranslate" v-if="search" @click="search = ''">close</i>
             </div>
           </form>
         </li>
 
-        <li v-if="!login"><router-link class="nav-link" to="/login">Login</router-link></li>
-        <li v-if="!login"><router-link class="nav-link" to="/register">Register</router-link></li>
+        <!-- 🌍 Language Selector -->
+        <li class="lang-selector">
+          <div class="input-field" style="margin:0">
+            <select ref="langSelect" v-model="selectedLang" @change="changeLang" class="browser-default">
+              <option value="en">English</option>
+              <option value="fr">Français</option>
+              <option value="vi">Tiếng Việt</option>
+            </select>
+            <label>🌍 Language</label>
+          </div>
+        </li>
 
+        <!-- 🔐 Auth Links -->
+        <li v-if="!login">
+          <router-link class="nav-link" to="/login">Login</router-link>
+        </li>
+        <li v-if="!login">
+          <router-link class="nav-link" to="/register">Register</router-link>
+        </li>
+
+        <!-- Logged-in User Dropdown -->
         <li v-if="user">
-          <a class="dropdown-trigger nav-link" href="javascript:void(0)" data-target="dropdown-user">{{ user.name }}</a>
+          <a
+            class="dropdown-trigger nav-link"
+            href="javascript:void(0)"
+            data-target="dropdown-user"
+          >{{ user.name }}</a>
           <ul id="dropdown-user" class="dropdown-content" style="width: 140px;">
-            <li><a href="javascript:void(0)" @click="doLogout">Logout</a></li>
+            <li>
+              <button class="logout-btn" @click="doLogout">Log out</button>
+            </li>
           </ul>
         </li>
 
-        <li>
+        <!-- 🛒 Cart (notranslate) -->
+        <li class="notranslate">
           <router-link class="nav-link cart-link" to="/cart">
-            <span class="cart-icon-wrapper">
-              <i class="material-icons">shopping_cart</i>
-              <span v-if="cartCounter > 0" class="cart-badge">{{ cartCounter }}</span>
+            <span class="cart-icon-wrapper notranslate">
+              <i class="material-icons notranslate">shopping_cart</i>
+              <span v-if="cartCounter > 0" class="cart-badge notranslate">{{ cartCounter }}</span>
             </span>
           </router-link>
         </li>
-
       </ul>
 
+      <!-- 📱 Mobile Nav -->
       <ul id="nav-mobile" class="sidenav"></ul>
     </div>
   </nav>
@@ -50,7 +87,10 @@ import { io } from "socket.io-client"
 export default {
   name: "AppHeader",
   data() {
-    return { search: "" }
+    return {
+      search: "",
+      selectedLang: localStorage.getItem("selectedLang") || "en"
+    }
   },
   computed: {
     user() {
@@ -64,26 +104,56 @@ export default {
     }
   },
   methods: {
-    async doLogout() {
-      const response = await axios.post(this.$apiURL + "/logout", null, {
-        headers: this.$headers
-      })
-      if (response.data.status === "success") {
-        localStorage.removeItem(this.$accessTokenKey)
-        this.$headers = {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer '
-        }
-        store.commit("setLogin", false)
-        store.commit("setUser", null)
-        this.$router.push("/login")
-      } else {
-        swal.fire("Error", response.data.message, "error")
-      }
+    doSearch() {
+    store.commit("setSearch", this.search)
+    this.$router.push("/") // redirect về Home để load lại với search mới
+  },
+    changeLang() {
+      const to = this.selectedLang
+      const googTransValue = `/auto/${to}`
+
+      document.cookie = `googtrans=${googTransValue};path=/`
+      localStorage.setItem("selectedLang", this.selectedLang)
+      store.commit("setSelectedLang", this.selectedLang)
+
+      window.location.reload()
     },
+
+
+    async doLogout() {
+  try {
+    const token = localStorage.getItem(this.$accessTokenKey)
+
+    const response = await axios.post(this.$apiURL + "/logout", null, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      }
+    })
+
+    if (response.data.status === "success") {
+      localStorage.removeItem(this.$accessTokenKey)
+      store.commit("setLogin", false)
+      store.commit("setUser", null)
+
+      if (global.socketIO && global.socketIO.disconnect) {
+        global.socketIO.disconnect()
+      }
+
+      window.location.href = "/login"
+    } else {
+      swal.fire("Logout Failed", response.data.message || "Unknown error", "error")
+    }
+  } catch (err) {
+    console.error("Logout error:", err)
+    swal.fire("Oops!", "Something went wrong during logout.", "error")
+  }
+},
     async getUser() {
       if (localStorage.getItem(this.$accessTokenKey)) {
-        const response = await axios.post(this.$apiURL + "/getUser", null, { headers: this.$headers })
+        const response = await axios.post(this.$apiURL + "/getUser", null, {
+          headers: this.$headers
+        })
         if (response.data.status === "success") {
           store.commit("setUser", response.data.user)
 
@@ -103,9 +173,6 @@ export default {
         store.commit("setLogin", !!localStorage.getItem(this.$accessTokenKey))
       }
     },
-    doSearch() {
-      store.commit("setSearch", this.search)
-    },
     syncCartFromCookie() {
       try {
         const cookieMap = Object.fromEntries(
@@ -114,19 +181,12 @@ export default {
             return [k, decodeURIComponent(v)]
           })
         )
-
         if (cookieMap.products) {
           const cart = JSON.parse(cookieMap.products)
-          if (Array.isArray(cart)) {
-            store.commit("setCartCounter", cart.length)
-          } else {
-            console.warn("Invalid cart format 🤨")
-            store.commit("setCartCounter", 0)
-          }
+          store.commit("setCartCounter", Array.isArray(cart) ? cart.length : 0)
         } else {
           store.commit("setCartCounter", 0)
         }
-
       } catch (err) {
         console.warn("🔥 Failed to sync cart from cookie:", err)
         store.commit("setCartCounter", 0)
@@ -138,11 +198,25 @@ export default {
     global.socketIO = io(this.$apiURL)
     this.getUser()
 
-    const elems = document.querySelectorAll('.sidenav')
-    M.Sidenav.init(elems, {})
+    const sidenav = document.querySelectorAll('.sidenav')
+    M.Sidenav.init(sidenav, {})
+
+    this.$nextTick(() => {
+      const langSelect = this.$refs.langSelect
+      if (langSelect) {
+        M.FormSelect.init(langSelect)
+      }
+    })
+
+    // 🌐 Apply stored language by setting cookie if missing
+    const storedLang = localStorage.getItem("selectedLang") || "en"
+    if (!document.cookie.includes(`googtrans=/auto/${storedLang}`)) {
+      this.changeLang()
+    }
   }
 }
 </script>
+
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Parisienne&family=Nunito:wght@500;600&display=swap');
@@ -331,6 +405,116 @@ ul.right > li {
 .nav-link {
   padding: 0 16px;
   font-size: 1.2rem;
+}
+
+.input-field label {
+  color: transparent;
+  font-size: 0;
+  height: 0;
+}
+
+/* 💥 Google Translate style fixes */
+body > .goog-te-banner-frame.skiptranslate,
+body > .skiptranslate {
+  display: none !important;
+}
+body {
+  top: 0px !important;
+}
+#google_translate_element {
+  all: unset;
+  display: inline-block;
+  width: auto;
+  height: auto;
+  font-size: 0;
+  position: absolute;
+  visibility: hidden;
+}
+.goog-logo-link,
+.goog-te-gadget span,
+#goog-gt-tt,
+.goog-te-balloon-frame,
+.goog-text-highlight {
+  display: none !important;
+}
+
+.lang-selector select.browser-default {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: none;
+  color: #4b4b4b;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 600;
+  font-size: 1.2rem;
+  height: 60px;
+  line-height: 60px;
+  padding: 0 16px;
+  margin: 0;
+  cursor: pointer;
+  position: relative;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.lang-selector select.browser-default:hover,
+.lang-selector select.browser-default:focus {
+  color: #d63384;
+  border-bottom: 2px solid #d63384;
+  outline: none;
+}
+
+.lang-selector select.browser-default:hover::before {
+  content: '✨';
+  position: absolute;
+  top: -8px;
+  right: -10px;
+  font-size: 12px;
+  animation: sparkleFloat 1s ease-in-out infinite;
+}
+
+@keyframes sparkleFloat {
+  0% { opacity: 0; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-4px); }
+  100% { opacity: 0; transform: translateY(0); }
+}
+
+.lang-selector {
+  display: flex;
+  align-items: center;
+  height: 60px;
+}
+
+.lang-selector .input-field {
+  margin: 0 !important;
+  padding: 0 !important;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.lang-selector label {
+  display: none !important;
+}
+
+.logout-btn {
+  width: 100%;
+  background: #fff0f5;
+  color: #d63384;
+  border: 1px solid #ffb6c1;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+}
+
+.logout-btn:hover {
+  background-color: #ffddea;
+  color: #b3266e;
+  transform: scale(1.03);
 }
 
 

@@ -376,11 +376,12 @@ export default {
       }
     },
     goBackHome() {
-      this.isShowingAllProducts = false
-      this.sortBy = ""
-      this.page = 1
-      this.getData()
-    },
+    this.isShowingAllProducts = false
+    this.sortBy = ""
+    this.page = 1
+    store.commit("setSearch", "") // 🧼 clear search keyword
+    this.getData()
+  },
     goToPage(newPage) {
       if (newPage >= 1 && newPage <= this.totalPages) {
         this.page = newPage
@@ -399,7 +400,10 @@ export default {
     M.Tooltip.init(tips, {})
   },
   watch: {
-    search() {
+    search(newVal) {
+      if (newVal && !this.isShowingAllProducts) {
+        this.isShowingAllProducts = true
+      }
       this.getData()
     }
   }

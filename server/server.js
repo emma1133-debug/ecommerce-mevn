@@ -34,11 +34,16 @@ global.jwtSecret = jwtSecret
 
 const socketIO = require("socket.io")(http, {
     cors: {
-        origin: ["http://localhost:8080", "http://localhost:8081"],// or whatever your frontend URL is
-        methods: ["GET", "POST"],
-        credentials: true
+      origin: [
+        "http://localhost:8080",
+        "http://localhost:8081",
+        "http://192.168.0.229:8080",
+        "http://192.168.0.229:8081"
+      ],
+      methods: ["GET", "POST"],
+      credentials: true
     }
-})
+  })  
 global.socketIO = socketIO
 
 socketIO.on("connection", (socket) => {
@@ -51,23 +56,28 @@ socketIO.on("connection", (socket) => {
 
 // Add headers before the routes are defined
 app.use(function (req, res, next) {
-
-    // Website you wish to allow to connect
-    res.setHeader('Access-Control-Allow-Origin', '*')
-
-    // Request methods you wish to allow
+    const allowedOrigins = [
+      "http://localhost:8080",
+      "http://localhost:8081",
+      "http://192.168.0.229:8080",
+      "http://192.168.0.229:8081"
+    ]
+    const origin = req.headers.origin
+    if (allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin)
+    }
+  
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE')
 
-    // Request headers you wish to allow
+
     res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type,Authorization')
 
-    // Set to true if you need the website to include cookies in the requests sent
-    // to the API (e.g. in case you use sessions)
-    res.setHeader('Access-Control-Allow-Credentials', true)
 
-    // Pass to next layer of middleware
+    res.setHeader('Access-Control-Allow-Credentials', true)
+    
     next()
-})
+  })
+  
 
 const apiURL = "http://localhost:3000"
 global.adminEmail = "admin@gmail.com"

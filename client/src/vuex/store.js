@@ -9,6 +9,7 @@ export default createStore({
 			login: false,
 			search: "",
 			cartCounter: 0,
+			selectedLang: localStorage.getItem("selectedLang") || "en", // ✅ Thêm dòng này
 			months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 		}
 	},
@@ -44,6 +45,10 @@ export default createStore({
 
 		setCartCounter (state, cartCounter) {
 			state.cartCounter = cartCounter
+		},
+
+		setSelectedLang (state, lang) { // ✅ Thêm cái mutation này
+			state.selectedLang = lang
 		}
 	},
 
@@ -74,6 +79,10 @@ export default createStore({
 
 		getCartCounter (state) {
 			return state.cartCounter
+		},
+
+		getSelectedLang (state) { // ✅ Optional nếu m muốn lấy selectedLang trong computed
+			return state.selectedLang
 		}
 	}
 })
