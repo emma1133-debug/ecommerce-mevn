@@ -37,9 +37,10 @@ app.config.globalProperties.$user = null
 app.config.globalProperties.$login = false
 
 app.config.globalProperties.$headers = {
-	'Content-Type': 'application/json',
 	'Authorization': 'Bearer ' + localStorage.getItem("accessTokenKey")
-}
+	// ❌ ĐỪNG có 'Content-Type': 'application/json' ở đây nếu xài FormData
+  }
+  
 
 app.use(router)
 app.mount('#app')

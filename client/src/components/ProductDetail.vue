@@ -201,6 +201,7 @@
 	font-weight: 700;
 	color: #d63384;
 	margin-bottom: 12px;
+	margin-top: 0px;
   }
   
   .product-price-wrapper {

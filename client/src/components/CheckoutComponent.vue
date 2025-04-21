@@ -45,7 +45,7 @@
 			</div>
 		  </div>
   
-		  <div class="col m4">
+		  <div class="col s12 m4">
 			<div class="card" style="padding: 20px;">
 			  <div class="card-body">
 				<div class="table-responsive">
@@ -313,5 +313,7 @@
 	font-size: 1rem;
 	color: #d63384;
   }
+
+  
   </style>
   

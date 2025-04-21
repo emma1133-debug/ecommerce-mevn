@@ -1,6 +1,5 @@
 <template>
   <div class="container">
-
     <!-- 🌸 Carousel Banner -->
     <Carousel
       :autoplay="3000"
@@ -39,9 +38,10 @@
       <span class="sparkle sparkle-4"></span>
     </div>
 
-    <!-- 🔽 Sort Sidebar + Product Grid -->
+    <!-- 🔽 Sort + Filter Sidebar + Product Grid -->
     <div v-if="isShowingAllProducts" class="filter-sort-row">
       <div class="filter-sidebar">
+        <!-- Sort -->
         <h6 class="filter-title">Sort by</h6>
         <ul class="sort-options">
           <li>
@@ -69,32 +69,61 @@
             </label>
           </li>
         </ul>
+
+        <!-- Filter by Category -->
+        <h6 class="filter-title mt-4">Filter by Category</h6>
+          <ul class="sort-options">
+            <li v-for="cat in categories" :key="cat">
+              <label>
+                <input
+                  type="radio"
+                  :value="cat"
+                  v-model="category"
+                  @change="onchangeSortBy"
+                />
+                <span>{{ cat }}</span>
+              </label>
+            </li>
+            <li>
+              <label>
+                <input type="radio" value="" v-model="category" @change="onchangeSortBy" />
+                <span>All Categories</span>
+              </label>
+            </li>
+          </ul>
       </div>
 
       <div class="product-grid-wrapper">
         <div class="product-grid">
-          <div class="card product-card hoverable" v-for="product in products" :key="product._id">
-            <div class="card-image zoom-img" @click="goToProduct(product._id)">
-              <img :src="$apiURL + '/' + product.images[0]" :id="'product-img-' + product._id" class="product-image" />
+          <div
+            class="card product-card hoverable"
+            v-for="product in products"
+            :key="product._id"
+            @click="goToProduct(product._id)"
+          >
+            <template v-if="product && product.images && product.images.length > 0">
+              <img :src="$apiURL + '/' + product.images[0]" class="product-image" />
               <span class="badge sale-badge" v-if="product.itemsInStock <= 5">Low Stock</span>
-            </div>
-            <div class="card-content">
-              <div class="card-title">{{ product.name }}</div>
-              <div class="pink-text">${{ formatPrice(product.price) }}</div>
-            </div>
-            <div class="card-action">
-              <div v-if="getAddedCount(product._id) === 0">
-                <button class="mini-cart-btn" @click.stop="addToCart(product, $event)">Add to Cart</button>
-              </div>
-              <div v-else class="quantity-controls" @click.stop>
-                <button class="qty-btn" @click="decreaseQty(product)">−</button>
-                <span class="qty-text">{{ getAddedCount(product._id) }}</span>
-                <button class="qty-btn" @click="increaseQty(product)">+</button>
-              </div>
-            </div>
-          </div>
-        </div>
 
+              <div class="card-content">
+                <div class="card-title">{{ product.name }}</div>
+                <div class="pink-text">${{ formatPrice(product.price) }}</div>
+              </div>
+
+              <div class="card-action" @click.stop>
+                <div v-if="getAddedCount(product._id) === 0">
+                  <button class="mini-cart-btn" @click.stop="addToCart(product, $event)">Add to Cart</button>
+                </div>
+                <div v-else class="quantity-controls">
+                  <button class="qty-btn" @click="decreaseQty(product)">−</button>
+                  <span class="qty-text">{{ getAddedCount(product._id) }}</span>
+                  <button class="qty-btn" @click="increaseQty(product)">+</button>
+                </div>
+              </div>
+            </template>
+          </div>
+
+        </div>
       </div>
     </div>
 
@@ -107,10 +136,19 @@
         <div class="horizontal-scroll-wrapper">
           <button class="scroll-btn left" @click="scrollLeft(idx)">‹</button>
           <div class="scroll-track" :ref="'sliderTrack' + idx">
-            <div class="scroll-item" v-for="product in products" :key="product._id + idx">
+            <div
+              class="scroll-item"
+              v-for="product in allProducts.filter(p => p.category?.toLowerCase().trim() === section.category.toLowerCase().trim())"
+              :key="product._id + idx"
+            >
               <div class="card product-card hoverable">
                 <div class="card-image zoom-img" @click="goToProduct(product._id)">
-                  <img :src="$apiURL + '/' + product.images[0]" :id="'slider-img-' + product._id" class="product-image" />
+                  <img
+                      v-if="product.images && product.images.length > 0"
+                      :src="$apiURL + '/' + product.images[0]"
+                      :id="'slider-img-' + product._id"
+                      class="product-image"
+                    />
                   <span class="badge sale-badge" v-if="product.itemsInStock <= 5">Low Stock</span>
                 </div>
                 <div class="card-content">
@@ -136,19 +174,17 @@
       <hr class="horizontal-line" />
     </div>
 
-    <!-- 🛒 Cart Position Target -->
+    <!-- 🛒 Cart Target -->
     <div id="cart-icon" style="position: fixed; top: 20px; right: 40px; z-index: 9999;"></div>
 
-    <!-- ✨ Show More Button -->
+    <!-- ✨ Show More -->
     <div class="show-more-wrapper" v-if="!isShowingAllProducts">
       <button class="show-more-btn" @click="isShowingAllProducts = true">✨ Show All Products</button>
     </div>
 
-    <!-- 👈 Chỉ hiện khi đang ở chế độ xem all -->
-    <!-- 👇 Hiện khi đang ở chế độ xem all -->
+    <!-- ⬅️ Back & Pagination -->
     <div v-if="isShowingAllProducts" class="back-pagination-wrapper">
       <button class="show-more-btn" @click="goBackHome">← Back to Home</button>
-
       <div class="pagination-wrapper" v-if="totalPages > 1">
         <ul class="pagination">
           <li @click="goToPage(page - 1)" :class="{ disabled: page === 1 }">‹</li>
@@ -179,8 +215,9 @@ export default {
   data() {
     return {
       page: 1,
-      totalPages: 1, // ✅ Thêm phân trang
-      products: [],
+      totalPages: 1,
+      allProducts: [], // 👈 chứa tất cả product cho slider
+      products: [],    // 👈 product phân trang
       sortBy: "",
       categories: [],
       category: "",
@@ -200,39 +237,31 @@ export default {
       promoTitles: ["Disney", "Barbie", "Sylvanian Families"],
 
       sliderSections: [
-        {
-          logo: "https://static.wixstatic.com/media/14399c_0cf501ab23f84ccebb664a7d74a764d4~mv2.png/v1/fill/w_352,h_78,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/hhl.png"
-        },
-        {
-          logo: "https://static.wixstatic.com/media/14399c_936fcc38875d40ab81db919ee7944b60~mv2.png/v1/fill/w_203,h_101,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/bestie.png"
-        },
-        {
-          logo: "https://static.wixstatic.com/media/14399c_262d3bbef0034f9babc9ad2053c685c6~mv2.png/v1/fill/w_203,h_101,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/barbie%20logo.png"
-        }
+        { logo: "https://static.wixstatic.com/media/14399c_0cf501ab23f84ccebb664a7d74a764d4~mv2.png", category: "Monster High" },
+        { logo: "https://static.wixstatic.com/media/14399c_936fcc38875d40ab81db919ee7944b60~mv2.png", category: "Hey Bestie" },
+        { logo: "https://static.wixstatic.com/media/14399c_262d3bbef0034f9babc9ad2053c685c6~mv2.png", category: "Barbie" },
+        { logo: "https://static.wixstatic.com/media/14399c_fbf6d10e2e5f46dbbd07e6ef584aec6b~mv2.png", category: "Sylvanian Families" },
+        { logo: "https://static.wixstatic.com/media/14399c_321436e7cc8647c8ad152e8764e9a742~mv2.png", category: "Disney" }
       ]
     }
   },
   computed: {
     search() {
       return store.getters.getSearch
-    }, 
+    },
     visiblePages() {
       const pages = []
-
       if (this.totalPages <= 7) {
         for (let i = 1; i <= this.totalPages; i++) pages.push(i)
       } else {
         pages.push(1)
-
-        if (this.page > 3) pages.push("left-ellipsis")
+        if (this.page > 3) pages.push("...")
         for (let i = Math.max(2, this.page - 1); i <= Math.min(this.totalPages - 1, this.page + 1); i++) {
           pages.push(i)
         }
-        if (this.page < this.totalPages - 2) pages.push("right-ellipsis")
-
+        if (this.page < this.totalPages - 2) pages.push("...")
         pages.push(this.totalPages)
       }
-
       return pages
     }
   },
@@ -254,7 +283,6 @@ export default {
           try {
             return JSON.parse(decodeURIComponent(value))
           } catch (e) {
-            console.warn("❌ Failed to parse products cookie", e)
             return []
           }
         }
@@ -285,29 +313,6 @@ export default {
       else list.push({ ...product, units: 1 })
       this.updateCartCookie(list)
       M.toast({ html: "Added to cart! 🛒" })
-
-      const img = document.getElementById("product-img-" + product._id) || document.getElementById("slider-img-" + product._id)
-      if (!img) return
-      const clone = img.cloneNode()
-      const cart = document.getElementById("cart-icon")
-      const rect = img.getBoundingClientRect()
-      clone.style.position = "fixed"
-      clone.style.left = rect.left + "px"
-      clone.style.top = rect.top + "px"
-      clone.style.width = img.offsetWidth + "px"
-      clone.style.height = img.offsetHeight + "px"
-      clone.style.zIndex = 999
-      clone.style.transition = "all 0.9s ease"
-      document.body.appendChild(clone)
-      setTimeout(() => {
-        clone.style.left = cart.offsetLeft + "px"
-        clone.style.top = cart.offsetTop + "px"
-        clone.style.opacity = "0.2"
-        clone.style.transform = "scale(0.1)"
-      }, 10)
-      setTimeout(() => {
-        document.body.removeChild(clone)
-      }, 1000)
     },
     increaseQty(product) {
       const list = this.getCartList()
@@ -335,6 +340,7 @@ export default {
       if (res.data.status === "success") {
         let productList = res.data.products
         this.totalPages = res.data.totalPages || 1
+
         if (this.sortBy === "newestToOldest") {
           productList.sort((a, b) => b.createdAt - a.createdAt)
         } else if (this.sortBy === "oldestToNewest") {
@@ -344,7 +350,18 @@ export default {
         } else if (this.sortBy === "priceDescending") {
           productList.sort((a, b) => b.price - a.price)
         }
-        this.products = productList
+
+        this.products = productList.filter(p => p.images && p.images.length > 0)
+      }
+    },
+    async getAllProductsForSlider() {
+      try {
+        const res = await axios.post(this.$apiURL + "/products/fetchAll") // 👈 this must exist in backend
+        if (res.data.status === "success") {
+          this.allProducts = res.data.products.filter(p => p.images && p.images.length > 0)
+        }
+      } catch (err) {
+        console.error("❌ Failed to fetch all products for slider", err)
       }
     },
     async getConfigurations() {
@@ -376,12 +393,12 @@ export default {
       }
     },
     goBackHome() {
-    this.isShowingAllProducts = false
-    this.sortBy = ""
-    this.page = 1
-    store.commit("setSearch", "") // 🧼 clear search keyword
-    this.getData()
-  },
+      this.isShowingAllProducts = false
+      this.sortBy = ""
+      this.page = 1
+      store.commit("setSearch", "")
+      this.getData()
+    },
     goToPage(newPage) {
       if (newPage >= 1 && newPage <= this.totalPages) {
         this.page = newPage
@@ -393,6 +410,7 @@ export default {
   mounted() {
     this.getConfigurations()
     this.getData()
+    this.getAllProductsForSlider() // 👈 load full list for slider
     this.refreshCartMap()
     const elems = document.querySelectorAll("select")
     M.FormSelect.init(elems, {})
@@ -539,14 +557,14 @@ export default {
     100% { transform: scale(1) rotate(360deg); opacity: 0.8; }
   }
 
-  .slider-container {
-  width: 100%;
-  max-width: 1050px; /* 👈 giới hạn khung nhìn để vừa 4 item + gap */
-  margin: 0 auto;
-  padding: 0 40px;
-  overflow: hidden;
-  position: relative;
-}
+  .slider-container{
+    width: 100%;
+    max-width: 1350px;
+    margin: 0 auto;
+    padding: 0 30px;
+    overflow: hidden;
+    position: relative;
+  }
 
 .horizontal-scroll-wrapper {
   display: flex;
@@ -559,16 +577,19 @@ export default {
 }
 
 .scroll-track {
+  min-height: 300px;
   display: flex;
   overflow-x: auto;
   scroll-behavior: smooth;
-  gap: 24px;
   padding: 15px 0;
 }
 
 .scroll-item {
   flex: 0 0 auto;
-  width: 220px; /* 👈 cố định chiều rộng item */
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 
@@ -579,46 +600,60 @@ export default {
 
   /* 🛒 CARD */
   .product-card {
-    width: 100%;
-  padding: 0;
-  background: #fff; /* ✨ nền trắng sạch */
-  border: none;     /* bỏ viền màu mè */
-  box-shadow: none; /* không đổ bóng */
-  border-radius: 0; /* bo vuông */
-  text-align: center;
-  transition: transform 0.2s ease;
-  }
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  transform: scale(0.85);
+  transform-origin: top center;
+  transition: transform 0.3s ease;
+}
 
-  .product-card:hover {
-    transform: scale(1.01);
-    box-shadow: 0 10px 24px rgba(255, 133, 162, 0.25);
-  }
+.product-card:hover {
+  transform: scale(0.95);
+  box-shadow: 0 8px 20px rgba(255, 133, 162, 0.25);
+}
 
   .product-image {
     width: 100%;
-    height: 180px;
+    height: 300px;
     object-fit: cover;
     border-radius: 12px;
     border: 2px solid #ffd6e3;
     background-color: #fff0f5;
   }
-  .card-content {
-    background-color: #fff8fb;
-    padding: 16px 12px;
-    text-align: center;
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 6px;
-    border-top: 1px dashed #ffc2d9;
-  }
-  .card-title {
-    font-size: 2rem;
-    color: #d63384;
-    font-weight: 700;
-    margin-bottom: 2px;
-  }
+ .card-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 120px;
+  padding: 10px 20px;
+}
+
+
+
+.card-title {
+  font-size: 1.8rem;
+  color: #d63384;
+  font-weight: 700;
+  margin-bottom: 4px;
+  line-height: 1.3;
+  
+  display: -webkit-box;
+  -webkit-line-clamp: 2;            /* 👈 chỉ 2 dòng thôi */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+
+  white-space: normal;              /* 👈 cho xuống dòng */
+  text-overflow: ellipsis;
+  
+  text-align: left;
+  max-height: calc(1.3em * 2);      /* 👈 đúng 2 dòng chiều cao */
+}
+
+
+
   .card-action {
     background: #fff0f5;
     padding: 16px 0;
@@ -634,7 +669,7 @@ export default {
     background: linear-gradient(135deg, #ff85a2, #ffa4c1);
     color: white;
     font-size: 0.9rem;
-    padding: 14px 24px;
+    padding: 18px 56px;
     border-radius: 10px;
     border: none;
     box-shadow: 0 2px 6px rgba(255, 133, 162, 0.3);
@@ -682,7 +717,6 @@ export default {
     background: #ff85a2;
     color: white;
     font-size: 0.75rem;
-    padding: 4px 8px;
     border-radius: 4px;
     font-weight: 600;
     z-index: 5;
@@ -772,19 +806,40 @@ export default {
 }
 
 .product-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 👈 luôn 4 item */
-  gap: 30px;
-  padding: 30px 10px;
-  max-width: 1340px;
-  margin: 0 auto;
+  max-width: none !important;  /* 👈 bỏ giới hạn chiều ngang */
+  width: 100%;
+  padding: 30px 40px;
+  grid-template-columns: repeat(4, 1fr); /* vẫn 4 item mỗi hàng */
+  gap: 20px;
 }
+
+
+/* Responsive: tablet 3 cột */
+@media (max-width: 1200px) {
+  .product-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Mobile lớn: 2 cột */
+@media (max-width: 768px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile nhỏ: 1 cột */
+@media (max-width: 480px) {
+  .product-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 
 .filter-sort-row {
   display: flex;
-  max-width: 1340px;
+  max-width: 1600px; 
   margin: 0 auto;
-  gap: 40px;
   padding: 30px 10px;
 }
 
@@ -822,21 +877,27 @@ export default {
 
 .product-grid-wrapper {
   flex: 1;
+  width: 100%;
 }
 
+
 .horizontal-line {
-  max-width: 1050px;   /* 👈 khớp với slider-container */
+  max-width: 800px;   /* 👈 khớp với slider-container */
   margin: 30px auto 60px;
   height: 1px;
-  background-color: #b66e85;
+  background-color: #f46894;
   border: none;
   opacity: 0.8;
 }
 
 .pink-text {
   color: #ee90b0 !important;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-top: auto;
 }
+
+
 .pagination li {
   padding: 8px 16px;
   background-color: transparent;
@@ -878,7 +939,86 @@ export default {
   margin: 40px 0 60px;
 }
 
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  padding: 30px 40px;
+  max-width: 1800px;
+  margin: 0 auto;
+}
 
+.product-grid .product-card {
+  background: white;
+  border: 1px solid #ffd6e3;
+  border-radius: 0; /* ❌ bỏ bo tròn */
+  padding: 0;
+  box-shadow: 0 4px 12px rgba(255, 133, 162, 0.15); /* bóng mặc định */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transform: scale(0.9);
+  transform-origin: top center;
+}
+
+
+.product-grid .product-card:hover {
+  transform: scale(0.95);
+  box-shadow: 0 6px 16px rgba(255, 133, 162, 0.25); /* ✅ bóng hồng giống slider */
+}
+
+.product-grid .product-image {
+  height: 300px; /* giống slider */
+  border-radius: 0px;
+  border: 2px solid #ffd6e3;
+  background-color: #fff0f5;
+  object-fit: cover;
+}
+
+.product-grid .card-content {
+  min-height: 135px;
+  width: 100%; /* 👈 thêm cái này */
+}
+
+
+.product-grid .card-title {
+  font-size: 1.8rem;         /* 👈 chỉnh nhẹ cho đỡ vỡ dòng */
+  font-weight: 700;
+  width: 100%;
+  color: #d63384;
+  text-align: left;
+  margin-bottom: 4px;
+  line-height: 1.4;
+  max-height: 2.8em;          /* 👈 canh chuẩn với 2 dòng */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Responsive tweaks */
+@media (max-width: 1200px) {
+  .product-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 768px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .product-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.product-grid .card-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
 
 </style>
 

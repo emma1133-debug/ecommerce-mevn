@@ -4,273 +4,207 @@ const auth = require("./auth")
 const ObjectId = require("mongodb").ObjectId
 
 module.exports = {
-	callbackFileUpload: function (images, index, savedPaths = [], success = null, error = null) {
-		const self = this
+  callbackFileUpload: function (images, index, savedPaths = [], success = null, error = null) {
+    const self = this
 
-		if (images.length > index) {
+    if (images.length > index) {
+      fileSystem.readFile(images[index].path, function (error, data) {
+        if (error) {
+          console.error(error)
+          return
+        }
 
-			fileSystem.readFile(images[index].path, function (error, data) {
-				if (error) {
-					console.error(error)
-					return
-				}
+        let filePath = "uploads/" + new Date().getTime() + "-" + images[index].name
 
-				let filePath = "uploads/" + new Date().getTime() + "-" + images[index].name
-				
-				fileSystem.writeFile(filePath, data, async function (error) {
-					if (error) {
-						console.error(error)
-						return
-					}
+        fileSystem.writeFile(filePath, data, async function (error) {
+          if (error) {
+            console.error(error)
+            return
+          }
 
-					console.log("image " + (index + 1) + " uploaded")
-					savedPaths.push(filePath)
+          console.log("image " + (index + 1) + " uploaded")
+          savedPaths.push(filePath)
 
-					if (index == (images.length - 1)) {
-						console.log("last image uploaded")
+          if (index == (images.length - 1)) {
+            console.log("last image uploaded")
 
-						if (success != null) {
-							success(savedPaths)
-						}
-					} else {
-						index++
-						self.callbackFileUpload(images, index, savedPaths, success, error)
-					}
-				})
+            if (success != null) {
+              success(savedPaths)
+            }
+          } else {
+            index++
+            self.callbackFileUpload(images, index, savedPaths, success, error)
+          }
+        })
 
-				fileSystem.unlink(images[index].path, function (error) {
-					if (error) {
-						console.error(error)
-						return
-					}
-				})
-			})
-		} else {
-			if (success != null) {
-				success(savedPaths)
-			}
-		}
-	},
+        fileSystem.unlink(images[index].path, function (error) {
+          if (error) {
+            console.error(error)
+            return
+          }
+        })
+      })
+    } else {
+      if (success != null) {
+        success(savedPaths)
+      }
+    }
+  },
 
-	init: function (router) {
-		const self = this
-		const productsRouter = express.Router()
+  init: function (router) {
+    const self = this
+    const productsRouter = express.Router()
 
-		productsRouter.post("/destroy", auth, async function (request, result) {
-			const _id = request.fields._id
-			
-			const product = await global.db.collection("products").findOne({
-				_id: ObjectId(_id)
-			})
+    productsRouter.post("/destroy", auth, async function (request, result) {
+      const _id = request.fields._id
 
-			if (product == null) {
-				result.json({
-					status: "error",
-					message: "Product not found."
-				})
-				return
-			}
+      const product = await global.db.collection("products").findOne({
+        _id: ObjectId(_id)
+      })
 
-			for (let a = 0; a < product.images.length; a++) {
-				fileSystem.unlink(product.images[a], function (error) {
-					console.log(error)
-				})
-			}
+      if (product == null) {
+        result.json({ status: "error", message: "Product not found." })
+        return
+      }
 
-			await global.db.collection("products").remove({
-				_id: product._id
-			})
+      for (let a = 0; a < product.images.length; a++) {
+        fileSystem.unlink(product.images[a], function (error) {
+          console.log(error)
+        })
+      }
 
-			result.json({
-				status: "success",
-				message: "Product has been deleted."
-			})
-		})
+      await global.db.collection("products").deleteOne({ _id: product._id })
 
-		productsRouter.post("/update", auth, async function (request, result) {
-			const name = request.fields.name
-			const description = request.fields.description
-			const price = request.fields.price
-			const itemsInStock = parseInt(request.fields.itemsInStock) || 0
-			const _id = request.fields._id
-			
-			const product = await global.db.collection("products").findOne({
-				_id: ObjectId(_id)
-			})
+      result.json({ status: "success", message: "Product has been deleted." })
+    })
 
-			if (product == null) {
-				result.json({
-					status: "error",
-					message: "Product not found."
-				})
-				return
-			}
+    productsRouter.post("/update", auth, async function (request, result) {
+      const name = request.fields.name
+      const description = request.fields.description
+      const price = request.fields.price
+      const itemsInStock = parseInt(request.fields.itemsInStock) || 0
+      const category = request.fields.category || "Uncategorized"
+      const _id = request.fields._id
 
-			// check if all files are image
-			for (let a = 0; a < request.files.images.length; a++) {
-				if (request.files.images[a].size > 0 && (request.files.images[a].type == "image/jpeg" || request.files.images[a].type == "image/png")) {
-					// 
-				} else {
-					result.json({
-						status: "error",
-						message: "Please select image file only."
-					})
-					return
-				}
-			}
+      const product = await global.db.collection("products").findOne({
+        _id: ObjectId(_id)
+      })
 
-			const images = []
-			if (Array.isArray(request.files.images)) {
-				for (let a = 0; a < request.files.images.length; a++) {
-					images.push(request.files.images[a])
-				}
-			} else {
-				if (request.files.images.size > 0) {
-					images.push(request.files.images)
-				}
-			}
+      if (!product) {
+        result.json({ status: "error", message: "Product not found." })
+        return
+      }
 
-			self.callbackFileUpload(images, 0, [], async function (savedPaths) {
-				// add in mongo db
+      const images = []
+      if (Array.isArray(request.files.images)) {
+        for (let a = 0; a < request.files.images.length; a++) {
+          if (request.files.images[a].size > 0) {
+            images.push(request.files.images[a])
+          }
+        }
+      } else {
+        if (request.files.images?.size > 0) {
+          images.push(request.files.images)
+        }
+      }
 
-				if (savedPaths.length > 0) {
-					// delete previous images
-					for (let a = 0; a < product.images.length; a++) {
-						fileSystem.unlink(product.images[a], function (error) {
-							console.log(error)
-						})
-					}
+      self.callbackFileUpload(images, 0, [], async function (savedPaths) {
+        const updateFields = {
+          name,
+          description,
+          price: parseFloat(price),
+          itemsInStock,
+          category
+        }
 
-					await global.db.collection("products").findOneAndUpdate({
-						_id: product._id
-					}, {
-						$set: {
-							name: name,
-							description: description,
-							price: parseFloat(price),
-							itemsInStock: itemsInStock,
-							images: savedPaths
-						}
-					})
-				} else {
-					await global.db.collection("products").findOneAndUpdate({
-						_id: product._id
-					}, {
-						$set: {
-							name: name,
-							description: description,
-							itemsInStock: itemsInStock,
-							price: parseFloat(price)
-						}
-					})
-				}
+        if (savedPaths.length > 0) {
+          // delete previous images
+          for (let a = 0; a < product.images.length; a++) {
+            fileSystem.unlink(product.images[a], function (error) {
+              console.log(error)
+            })
+          }
 
-				result.json({
-					status: "success",
-					message: "Product has been updated."
-				})
-			})
-		})
+          updateFields.images = savedPaths
+        }
 
-		productsRouter.post("/fetchSingle", auth, async function (request, result) {
-			const _id = request.fields._id
-			
-			const product = await global.db.collection("products").findOne({
-				_id: ObjectId(_id)
-			})
+        await global.db.collection("products").updateOne(
+          { _id: product._id },
+          { $set: updateFields }
+        )
 
-			if (product == null) {
-				result.json({
-					status: "error",
-					message: "Product not found."
-				})
-				return
-			}
+        result.json({ status: "success", message: "Product has been updated." })
+      })
+    })
 
-			result.json({
-				status: "success",
-				message: "Data has been fetched.",
-				product: product
-			})
-		})
+    productsRouter.post("/fetchSingle", auth, async function (request, result) {
+      const _id = request.fields._id
 
-		productsRouter.post("/fetch", auth, async function (request, result) {
-			const page = parseInt(request.fields.page) || 1
+      const product = await global.db.collection("products").findOne({
+        _id: ObjectId(_id)
+      })
 
-			// number of records you want to show per page
-		    const perPage = 10
+      if (!product) {
+        result.json({ status: "error", message: "Product not found." })
+        return
+      }
 
-			// get records to skip
-			const startFrom = (page - 1) * perPage
-			
-			const products = await global.db.collection("products").find({})
-				.sort({
-					"createdAt": -1
-				})
-				.skip(startFrom)
-				.limit(perPage)
-				.toArray()
+      result.json({ status: "success", message: "Data has been fetched.", product })
+    })
 
-			result.json({
-				status: "success",
-				message: "Data has been fetched.",
-				products: products
-			})
-		})
+    productsRouter.post("/fetch", auth, async function (request, result) {
+      const page = parseInt(request.fields.page) || 1
+      const perPage = 10
+      const startFrom = (page - 1) * perPage
 
-		productsRouter.post("/add", auth, function (request, result) {
-			const name = request.fields.name
-			const description = request.fields.description
-			const price = request.fields.price
-			const itemsInStock = parseInt(request.fields.itemsInStock) || 0
+      const products = await global.db.collection("products")
+        .find({})
+        .sort({ createdAt: -1 })
+        .skip(startFrom)
+        .limit(perPage)
+        .toArray()
 
-			if (itemsInStock < 0) {
-				result.json({
-					status: "error",
-					message: "Items in stock must be a positive number."
-				})
-				return
-			}
+      result.json({ status: "success", message: "Data has been fetched.", products })
+    })
 
-			// check if all files are image
-			for (let a = 0; a < request.files.images.length; a++) {
-				if (request.files.images[a].size > 0 && (request.files.images[a].type == "image/jpeg" || request.files.images[a].type == "image/png")) {
-					// 
-				} else {
-					result.json({
-						status: "error",
-						message: "Please select image file only."
-					})
-					return
-				}
-			}
+    productsRouter.post("/add", auth, function (request, result) {
+      const name = request.fields.name
+      const description = request.fields.description
+      const price = request.fields.price
+      const itemsInStock = parseInt(request.fields.itemsInStock) || 0
+      const category = request.fields.category || "Uncategorized"
 
-			const images = []
-			if (Array.isArray(request.files.images)) {
-				for (let a = 0; a < request.files.images.length; a++) {
-					images.push(request.files.images[a])
-				}
-			} else {
-				images.push(request.files.images)
-			}
+      if (itemsInStock < 0) {
+        result.json({ status: "error", message: "Items in stock must be a positive number." })
+        return
+      }
 
-			self.callbackFileUpload(images, 0, [], async function (savedPaths) {
-				await global.db.collection("products").insertOne({
-					name: name,
-					description: description,
-					price: parseFloat(price),
-					itemsInStock: itemsInStock,
-					images: savedPaths,
-					createdAt: new Date().getTime()
-				})
+      const images = []
+      if (Array.isArray(request.files.images)) {
+        for (let a = 0; a < request.files.images.length; a++) {
+          if (request.files.images[a].size > 0) {
+            images.push(request.files.images[a])
+          }
+        }
+      } else if (request.files.images?.size > 0) {
+        images.push(request.files.images)
+      }
 
-				result.json({
-					status: "success",
-					message: "Product has been added."
-				})
-			})
-		})
+      self.callbackFileUpload(images, 0, [], async function (savedPaths) {
+        await global.db.collection("products").insertOne({
+          name,
+          description,
+          price: parseFloat(price),
+          itemsInStock,
+          category,
+          images: savedPaths,
+          createdAt: new Date().getTime()
+        })
 
-		router.use("/products", productsRouter)
-	}
+        result.json({ status: "success", message: "Product has been added." })
+      })
+    })
+
+    router.use("/products", productsRouter)
+  }
 }

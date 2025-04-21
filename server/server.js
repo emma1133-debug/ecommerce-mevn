@@ -312,20 +312,17 @@ http.listen(port, function () {
         })
 
         app.post("/getConfigurations", async function (request, result) {
-            const configurations = await db.collection("configurations").findOne({})
-            if (configurations == null) {
-                result.json({
-                    status: "error",
-                    message: "Please set your configurations from admin dashboard."
-                })
-                return
-            }
-
+            let configurations = await db.collection("configurations").findOne({})
+            if (!configurations) configurations = {}
+        
+            const categories = await db.collection("products").distinct("category")
+            configurations.categories = categories.filter(c => c?.trim() !== "")
+        
             result.json({
                 status: "success",
                 message: "Data has been fetched.",
                 configurations: configurations
             })
-        })
+        })        
     })
 })
