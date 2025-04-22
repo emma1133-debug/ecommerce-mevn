@@ -10,31 +10,31 @@
   
             <div class="card-body">
               <form v-on:submit.prevent="addProduct" enctype="multipart/form-data">
-                <!-- 🔤 Name -->
+                <!--  Name -->
                 <div class="input-group input-group-outline mb-3">
                   <label class="form-label no-left-margin">Name</label>
                   <input type="text" class="form-control" name="name" autocomplete="off" required />
                 </div>
   
-                <!-- 📝 Description -->
+                <!-- Description -->
                 <div class="input-group input-group-outline mb-3">
                   <label class="form-label no-left-margin">Description</label>
                   <textarea name="description" class="form-control" style="margin-top: 50px;" required></textarea>
                 </div>
   
-                <!-- 💰 Price -->
+                <!-- Price -->
                 <div class="input-group input-group-outline mb-3">
                   <label class="form-label no-left-margin">Price ($)</label>
                   <input type="number" min="0" autocomplete="off" name="price" class="form-control" required />
                 </div>
   
-                <!-- 📦 Stock -->
+                <!-- Stock -->
                 <div class="input-group input-group-outline mb-3">
                   <label class="form-label no-left-margin">Items in stock (0 means unlimited, for digital products)</label>
                   <input type="number" min="0" name="itemsInStock" autocomplete="off" class="form-control" required />
                 </div>
   
-                <!-- 🆕 Category -->
+                <!-- Category -->
                 <div class="input-group input-group-outline mb-3">
                   <label class="form-label no-left-margin">Category</label>
                   <select v-model="category" class="form-control" required> <!-- 👈 KHÔNG có name -->
@@ -48,7 +48,7 @@
                   </select>
                 </div>
   
-                <!-- 🖼 Upload Images -->
+                <!-- Upload Images -->
                 <div class="input-group input-group-outline mb-3">
                   <label class="form-label no-left-margin">Images</label>
                   <input
@@ -63,14 +63,14 @@
                   />
                 </div>
   
-                <!-- 📸 Image Preview -->
+                <!-- Image Preview -->
                 <div v-for="(image, index) in images" class="row" style="margin-top: 20px;">
                   <div class="col-md-8">
                     <img :src="image.src" style="width: 100%;" />
                   </div>
                 </div>
   
-                <!-- 🔘 Submit -->
+                <!-- Submit -->
                 <div class="text-center">
                   <button
                     type="submit"

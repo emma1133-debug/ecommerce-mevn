@@ -25,7 +25,7 @@
       <div class="row mt-4">
         <div class="col-md-12">
           <div class="card">
-            <div class="card-header"><h4 class="font-weight-bolder">📦 Orders</h4></div>
+            <div class="card-header"><h4 class="font-weight-bolder"> Orders</h4></div>
             <div class="card-body table-responsive">
                 <table class="table table-striped">
                 <thead>
@@ -61,7 +61,7 @@
       <div class="row mt-4">
         <div class="col-md-12">
           <div class="card">
-            <div class="card-header"><h4 class="font-weight-bolder">📊 Sales in Last 7 Days</h4></div>
+            <div class="card-header"><h4 class="font-weight-bolder">Sales in Last 7 Days</h4></div>
             <div class="card-body">
               <canvas id="salesChart"></canvas>
               <p v-if="salesStats.length === 0" class="text-muted text-center mt-2">No data available for the last 7 days.</p>
@@ -135,7 +135,7 @@
                 labels: stats.map(s => s.date),
                 datasets: [{
                     label: "Completed Orders",
-                    data: stats.map(s => s.count), // ✅ lấy số lượng đơn mỗi ngày
+                    data: stats.map(s => s.count), // lấy số lượng đơn mỗi ngày
                     backgroundColor: "#4caf50"
                 }]
                 },
@@ -148,7 +148,7 @@
                     y: {
                     beginAtZero: true,
                     ticks: {
-                        stepSize: 1 // 📌 vì đây là số lượng đơn, nên step = 1
+                        stepSize: 1 // vì đây là số lượng đơn, nên step = 1
                     }
                     }
                 }

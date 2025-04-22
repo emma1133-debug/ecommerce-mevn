@@ -43,7 +43,7 @@ import axios from "axios"
 export default {
   data() {
     return {
-      defaultAvatar: "https://shopemilym.com/cdn/shop/products/il_fullxfull.5410254897_7wbv.jpg?v=1699382024&width=1600" // cute fallback avatar
+      defaultAvatar: "https://shopemilym.com/cdn/shop/products/il_fullxfull.5410254897_7wbv.jpg?v=1699382024&width=1600" 
     }
   },
   computed: {

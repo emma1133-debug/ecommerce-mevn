@@ -3,7 +3,7 @@
     <div class="container">
       <div class="footer-flex">
 
-        <!-- 🌸 Brand -->
+        <!-- Brand -->
         <div class="footer-section">
           <h5 class="footer-brand">🌸 Emma Sakura</h5>
           <p class="footer-desc">
@@ -32,7 +32,7 @@
           </ul>
         </div>
 
-        <!-- 💌 Subscribe -->
+        <!-- Subscribe -->
         <div class="footer-section">
           <h6 class="footer-title">Subscribe</h6>
           <form @submit.prevent="subscribe">
@@ -66,14 +66,14 @@ export default {
   name: "AppFooter",
   methods: {
     subscribe() {
-      alert("🌸 Thanks for subscribing to Emma Sakura!");
+      alert("Thanks for subscribing to Emma Sakura!");
     }
   }
 }
 </script>
 
 <style scoped>
-/* 🌸 General */
+/* General */
 .bg-light-sakura {
   background-color: #fff1f6;
 }

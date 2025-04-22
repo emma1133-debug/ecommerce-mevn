@@ -3,16 +3,16 @@ import App from './App.vue'
 import VueTidio from 'vue-tidio'
 import { createRouter, createWebHistory } from "vue-router"
 
-// 📦 Import Materialize
+// Import Materialize
 import 'materialize-css/dist/js/materialize.min.js'
 import 'materialize-css/dist/css/materialize.min.css'
 import * as M from 'materialize-css'
 window.M = M
 
-// 🧠 Vuex store
+// Vuex store
 import store from './vuex/store'
 
-// 📦 Components
+// Components
 import HomeComponent from "./components/HomeComponent.vue"
 import ProductDetail from "./components/ProductDetail.vue"
 import CartComponent from "./components/CartComponent.vue"
@@ -21,7 +21,7 @@ import RegisterComponent from "./components/RegisterComponent.vue"
 import LoginComponent from "./components/LoginComponent.vue"
 import PremiumComponent from "./components/PremiumComponent.vue"
 
-// 🚦 Routes
+// Routes
 const routes = [
   { path: "/", component: HomeComponent },
   { path: "/product/:_id", component: ProductDetail },
@@ -37,7 +37,7 @@ const router = createRouter({
   routes
 })
 
-// 🚀 Init Vue app
+// Init Vue app
 const app = createApp(App)
 
 app.use(router)
@@ -51,7 +51,7 @@ router.afterEach((to) => {
   }
 })
 
-// 🌍 Global config
+// Global config
 const currentHost = window.location.hostname
 app.config.globalProperties.$apiURL = `http://${currentHost}:3000`
 app.config.globalProperties.$accessTokenKey = "accessTokenKey" // phải trùng key

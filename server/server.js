@@ -2,7 +2,7 @@ const express = require("express")
 const app = express()
 const http = require("http").createServer(app)
 const cors = require("cors")
-app.use(cors()) // 👈 bắt đầu hỗ trợ CORS
+app.use(cors()) 
 
 app.options("*", cors()) // 👈 optional cho preflight request
 
@@ -12,7 +12,7 @@ const ObjectId = mongodb.ObjectId
 
 const formidable = require("express-formidable")
 app.use(formidable({ multiples: true }))
-app.use(cors()) // 👈 Thêm dòng này vô
+app.use(cors()) 
 
 
 
@@ -83,6 +83,10 @@ const apiURL = "http://localhost:3000"
 global.adminEmail = "admin@gmail.com"
 
 const port = process.env.PORT || 3000
+app.get("/", (req, res) => {
+    res.send("Welcome to the E-Commerce API backend. All systems operational!");
+});
+
 http.listen(port, function () {
     console.log("Server started running at port: " + port)
 
@@ -97,6 +101,181 @@ http.listen(port, function () {
 
         admin.init(app)
         products.init(app)
+
+        app.put("/products/:id", async (req, res) => {
+            try {
+              const productId = new ObjectId(req.params.id);
+              const updates = req.fields; // 👈 dùng req.fields thay vì req.body
+          
+              if (!updates || typeof updates !== "object" || Object.keys(updates).length === 0) {
+                return res.json({
+                  status: "error",
+                  message: "No update data received."
+                });
+              }
+          
+              await global.db.collection("products").updateOne(
+                { _id: productId },
+                { $set: updates }
+              );
+          
+              res.json({
+                status: "success",
+                message: "Product updated successfully."
+              });
+            } catch (err) {
+              res.json({ status: "error", message: err.message });
+            }
+          });          
+          
+        // Route cho frontend gửi bằng form-data (formidable)
+        app.post("/products", async (req, res) => {
+            try {
+            const { name, description, price, itemsInStock, category, images } = req.fields;
+        
+            if (!name || !price || !itemsInStock || !category) {
+                return res.json({
+                status: "error",
+                message: "Missing required fields."
+                });
+            }
+  
+      const newProduct = {
+        name,
+        description: description || "",
+        price: parseFloat(price),
+        itemsInStock: parseInt(itemsInStock),
+        category,
+        images: Array.isArray(images)
+          ? images
+          : typeof images === "string"
+          ? [images]
+          : [],
+        createdAt: new Date().getTime()
+      };
+  
+      await global.db.collection("products").insertOne(newProduct);
+  
+      res.json({
+        status: "success",
+        message: "Product added successfully.",
+        product: newProduct
+      });
+    } catch (err) {
+      res.json({ status: "error", message: err.message });
+    }
+  });  
+
+        app.get("/orders", async (req, res) => {
+            try {
+              const orders = await global.db.collection("orders").find({}).toArray();
+              res.json({
+                status: "success",
+                message: "Orders fetched successfully.",
+                orders
+              });
+            } catch (err) {
+              res.json({ status: "error", message: err.message });
+            }
+          });
+          
+
+        // POST - Thêm sản phẩm mới
+        app.post("/products", async (req, res) => {
+            try {
+            const { name, description, price, itemsInStock, category, images } = req.body;
+        
+            if (!name || !price || !itemsInStock || !category) {
+                return res.json({
+                status: "error",
+                message: "Missing required fields."
+                });
+            }
+        
+            const newProduct = {
+                name,
+                description: description || "",
+                price: parseFloat(price),
+                itemsInStock: parseInt(itemsInStock),
+                category,
+                images: Array.isArray(images) ? images : [],
+                createdAt: new Date().getTime()
+            };
+        
+            await global.db.collection("products").insertOne(newProduct);
+        
+            res.json({
+                status: "success",
+                message: "Product added successfully.",
+                product: newProduct
+            });
+            } catch (err) {
+            res.json({ status: "error", message: err.message });
+            }
+        });
+        
+        // GET - Lấy toàn bộ sản phẩm hoặc theo trang
+        app.get("/products", async (req, res) => {
+            try {
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const skip = (page - 1) * limit;
+        
+            const products = await global.db.collection("products")
+                .find({})
+                .skip(skip)
+                .limit(limit)
+                .toArray();
+        
+            const total = await global.db.collection("products").countDocuments();
+        
+            res.json({
+                status: "success",
+                currentPage: page,
+                totalPages: Math.ceil(total / limit),
+                totalItems: total,
+                products
+            });
+            } catch (err) {
+            res.json({ status: "error", message: err.message });
+            }
+        });
+        
+        // PUT - Cập nhật sản phẩm theo ID
+        app.put("/products/:id", async (req, res) => {
+            try {
+            const productId = new ObjectId(req.params.id);
+            const updates = req.body;
+        
+            await global.db.collection("products").updateOne(
+                { _id: productId },
+                { $set: updates }
+            );
+        
+            res.json({
+                status: "success",
+                message: "Product updated successfully."
+            });
+            } catch (err) {
+            res.json({ status: "error", message: err.message });
+            }
+        });
+        
+        // DELETE - Xoá sản phẩm theo ID
+        app.delete("/products/:id", async (req, res) => {
+            try {
+            const productId = new ObjectId(req.params.id);
+        
+            await global.db.collection("products").deleteOne({ _id: productId });
+        
+            res.json({
+                status: "success",
+                message: "Product deleted successfully."
+            });
+            } catch (err) {
+            res.json({ status: "error", message: err.message });
+            }
+        });
 
         const adminObj = await db.collection("admins").findOne({})
         if (adminObj == null) {

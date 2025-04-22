@@ -1,17 +1,17 @@
 <template>
   <nav class="header-nav z-depth-1">
     <div class="nav-wrapper container">
-      <!-- 🌸 Logo -->
+      <!-- Logo -->
       <router-link id="logo-container" to="/" class="brand-logo">Emma Channe</router-link>
 
-      <!-- 📱 Mobile menu icon -->
+      <!-- Mobile menu icon -->
       <a href="#" data-target="nav-mobile" class="sidenav-trigger">
         <i class="material-icons">menu</i>
       </a>
 
-      <!-- 🌸 Desktop nav -->
+      <!-- Desktop nav -->
       <ul class="right hide-on-med-and-down">
-        <!-- 🔍 Search (notranslate) -->
+        <!-- Search (notranslate) -->
         <li class="notranslate">
           <form @submit.prevent="doSearch" class="header-search">
             <div class="input-wrapper notranslate">
@@ -27,7 +27,7 @@
           </form>
         </li>
 
-        <!-- 🌍 Language Selector -->
+        <!-- Language Selector -->
         <li class="lang-selector">
           <div class="input-field" style="margin:0">
             <select ref="langSelect" v-model="selectedLang" @change="changeLang" class="browser-default">
@@ -39,7 +39,7 @@
           </div>
         </li>
 
-        <!-- 🔐 Auth Links -->
+        <!-- Auth Links -->
         <li v-if="!login">
           <router-link class="nav-link" to="/login">Login</router-link>
         </li>
@@ -61,7 +61,7 @@
           </ul>
         </li>
 
-        <!-- 🛒 Cart (notranslate) -->
+        <!-- Cart (notranslate) -->
         <li class="notranslate">
           <router-link class="nav-link cart-link" to="/cart">
             <span class="cart-icon-wrapper notranslate">
@@ -72,7 +72,7 @@
         </li>
       </ul>
 
-      <!-- 📱 Mobile Nav -->
+      <!-- Mobile Nav -->
       <ul id="nav-mobile" class="sidenav"></ul>
     </div>
   </nav>

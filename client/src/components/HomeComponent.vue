@@ -16,7 +16,7 @@
       </Slide>
     </Carousel>
 
-    <!-- 🎀 Category Highlights -->
+    <!-- Category Highlights -->
     <div class="category-highlights">
       <div
         class="category-box"
@@ -38,7 +38,7 @@
       <span class="sparkle sparkle-4"></span>
     </div>
 
-    <!-- 🔽 Sort + Filter Sidebar + Product Grid -->
+    <!-- Sort + Filter Sidebar + Product Grid -->
     <div v-if="isShowingAllProducts" class="filter-sort-row">
       <div class="filter-sidebar">
         <!-- Sort -->
